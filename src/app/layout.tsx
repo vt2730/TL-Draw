@@ -9,6 +9,7 @@ import {
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import Image from 'next/image'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -34,18 +35,43 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <header className="flex justify-end items-center p-4 gap-4 h-16">
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton>
-                <button className="bg-[#6c47ff] text-ceramic-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
+          <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm flex justify-between items-center p-4 h-16 border-b border-gray-100">
+            {/* Logo Section */}
+            <div className="flex items-center">
+              <Image
+                src="/tl_logo.png"
+                alt="Logo"
+                width={40}
+                height={40}
+                className="h-8 w-auto sm:h-10"
+                priority
+              />
+            </div>
+
+            {/* Authentication Section */}
+            <div className="flex items-center gap-3">
+              <SignedOut>
+                <SignInButton>
+                  <button className="text-gray-700 hover:text-gray-900 font-medium text-sm sm:text-base px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-gray-200 hover:border-gray-300">
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton>
+                  <button className="bg-[#6c47ff] hover:bg-[#5a3de6] text-white rounded-lg font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-6 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]">
+                    Get Started
+                  </button>
+                </SignUpButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-10 h-10 rounded-full border-2 border-gray-200 hover:border-[#6c47ff] transition-colors duration-200"
+                    }
+                  }}
+                />
+              </SignedIn>
+            </div>
           </header>
           {children}
         </body>

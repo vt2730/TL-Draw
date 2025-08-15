@@ -4,6 +4,8 @@ import { WebhookEvent } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(req: Request) {
+  console.log('🔥 Webhook received!')
+  
   // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
@@ -49,8 +51,10 @@ export async function POST(req: Request) {
 
   // Handle the webhook
   const eventType = evt.type
+  console.log('📧 Event type:', eventType)
 
   if (eventType === 'user.created') {
+    console.log('👤 Creating new user in database...')
     const { id, email_addresses, first_name, last_name, image_url } = evt.data
 
     try {
@@ -63,8 +67,9 @@ export async function POST(req: Request) {
           imageUrl: image_url,
         },
       })
+      console.log('✅ User created successfully!')
     } catch (error) {
-      console.error('Error creating user:', error)
+      console.error('❌ Error creating user:', error)
       return new Response('Error creating user', { status: 500 })
     }
   }
