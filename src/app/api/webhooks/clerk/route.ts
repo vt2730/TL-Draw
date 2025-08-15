@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(req: Request) {
   console.log('🔥 Webhook received!')
-  
+
   // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
@@ -56,6 +56,10 @@ export async function POST(req: Request) {
   if (eventType === 'user.created') {
     console.log('👤 Creating new user in database...')
     const { id, email_addresses, first_name, last_name, image_url } = evt.data
+    if (!email_addresses || email_addresses.length === 0) {
+      console.error('No email addresses found for user creation')
+      return new Response('Invalid user data - no email addresses', { status: 400 })
+    }
 
     try {
       await prisma.user.create({
@@ -76,6 +80,10 @@ export async function POST(req: Request) {
 
   if (eventType === 'user.updated') {
     const { id, email_addresses, first_name, last_name, image_url } = evt.data
+    if (!email_addresses || email_addresses.length === 0) {
+      console.error('No email addresses found for user update')
+      return new Response('Invalid user data - no email addresses', { status: 400 })
+    }
 
     try {
       await prisma.user.update({
