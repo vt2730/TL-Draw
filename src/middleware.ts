@@ -1,6 +1,24 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
+// src/middleware.ts
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
-export default clerkMiddleware();
+// Define protected routes
+const isProtectedRoute = createRouteMatcher([
+  '/whiteboards(.*)',
+])
+
+export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth()
+
+  // If user is signed in and on root path, redirect to whiteboards
+  if (userId && req.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/whiteboards', req.url))
+  }
+  // Protect whiteboard routes
+  if (isProtectedRoute(req)) {
+    await auth.protect()
+  }
+})
 
 export const config = {
   matcher: [
@@ -9,4 +27,4 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
-};
+}
