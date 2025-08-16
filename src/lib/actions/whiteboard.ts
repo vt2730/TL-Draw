@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache'
 // Helper function to clean TLDraw snapshots
 function cleanTLDrawSnapshot(snapshot: any) {
   if (!snapshot || typeof snapshot !== 'object') return snapshot
-  
+
   try {
     // Convert to JSON and back to remove any functions or non-serializable data
     const cleaned = JSON.parse(JSON.stringify(snapshot, (key, value) => {
@@ -18,7 +18,7 @@ function cleanTLDrawSnapshot(snapshot: any) {
       }
       return value
     }))
-    
+
     return cleaned
   } catch (error) {
     console.error('Error cleaning snapshot:', error)
@@ -28,14 +28,14 @@ function cleanTLDrawSnapshot(snapshot: any) {
 
 export async function createWhiteboard(data: CreateWhiteboardData) {
   const { userId } = await auth()
-  
+
   if (!userId) {
     throw new Error('Unauthorized')
   }
 
   try {
     const cleanContent = data.content ? cleanTLDrawSnapshot(data.content) : null
-    
+
     const whiteboard = await prisma.whiteboard.create({
       data: {
         name: data.name,
@@ -46,7 +46,14 @@ export async function createWhiteboard(data: CreateWhiteboardData) {
     })
 
     revalidatePath('/whiteboards')
-    return { success: true, data: whiteboard }
+    return {
+      success: true,
+      data: {
+        ...whiteboard,
+        createdAt: whiteboard.createdAt.toISOString(),
+        updatedAt: whiteboard.updatedAt.toISOString(),
+      },
+    }
   } catch (error) {
     console.error('Create whiteboard error:', error)
     return { success: false, error: 'Failed to create whiteboard' }
@@ -55,7 +62,7 @@ export async function createWhiteboard(data: CreateWhiteboardData) {
 
 export async function updateWhiteboard(id: string, data: UpdateWhiteboardData) {
   const { userId } = await auth()
-  
+
   if (!userId) {
     throw new Error('Unauthorized')
   }
@@ -89,10 +96,10 @@ export async function updateWhiteboard(id: string, data: UpdateWhiteboardData) {
 
     revalidatePath('/whiteboards')
     revalidatePath(`/whiteboards/${id}`)
-    
+
     // Return serialized data
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         ...whiteboard,
         createdAt: whiteboard.createdAt.toISOString(),
@@ -107,7 +114,7 @@ export async function updateWhiteboard(id: string, data: UpdateWhiteboardData) {
 
 export async function deleteWhiteboard(id: string) {
   const { userId } = await auth()
-  
+
   if (!userId) {
     throw new Error('Unauthorized')
   }
@@ -136,7 +143,7 @@ export async function deleteWhiteboard(id: string) {
 
 export async function getUserWhiteboards(status?: WhiteboardStatus) {
   const { userId } = await auth()
-  
+
   if (!userId) {
     throw new Error('Unauthorized')
   }
@@ -168,7 +175,7 @@ export async function getUserWhiteboards(status?: WhiteboardStatus) {
 
 export async function getWhiteboardById(id: string) {
   const { userId } = await auth()
-  
+
   if (!userId) {
     throw new Error('Unauthorized')
   }

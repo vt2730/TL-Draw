@@ -21,14 +21,22 @@ export function WhiteboardList({ whiteboards }: WhiteboardListProps) {
         if (!confirm(`Are you sure you want to delete "${name}"?`)) return
 
         setDeletingId(id)
-        startTransition(async () => {
-            const result = await deleteWhiteboard(id)
-            if (result.success) {
-                router.refresh()
-            } else {
-                alert(result.error)
-            }
-            setDeletingId(null)
+        startTransition(() => {
+            (async () => {
+                try {
+                    const result = await deleteWhiteboard(id)
+                    if (result.success) {
+                        router.refresh()
+                    } else {
+                        alert(result.error)
+                    }
+                } catch (err) {
+                    console.error('Delete failed:', err)
+                    alert('Failed to delete whiteboard')
+                } finally {
+                    setDeletingId(null)
+                }
+            })()
         })
     }
 
@@ -73,8 +81,8 @@ export function WhiteboardList({ whiteboards }: WhiteboardListProps) {
                         </h3>
                         <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ml-2 ${whiteboard.status === 'PUBLISHED'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
                                 }`}
                         >
                             {whiteboard.status}
