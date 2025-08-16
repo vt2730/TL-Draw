@@ -26,3 +26,20 @@ model User {
 
   @@map("users")
 }
+
+model Whiteboard {
+  id          String   @id @default(cuid())
+  name        String
+  status      WhiteboardStatus @default(DRAFT)
+  content     Json?    // TLDraw snapshot data
+  userId      String   // Clerk user ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("whiteboards")
+}
+
+enum WhiteboardStatus {
+  DRAFT
+  PUBLISHED
+}
