@@ -6,6 +6,7 @@ import { Tldraw, createTLStore, defaultShapeUtils, defaultTools } from 'tldraw'
 import { updateWhiteboard } from '@/lib/actions/whiteboard'
 import { Whiteboard, WhiteboardStatus } from '@/types/whiteboard'
 import { useRouter } from 'next/navigation'
+import { SharingModal } from './sharing-modal'
 import 'tldraw/tldraw.css'
 
 interface WhiteboardEditorProps {
@@ -24,6 +25,7 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
   const [currentStatus, setCurrentStatus] = useState<WhiteboardStatus>(whiteboard.status)
   const [currentName, setCurrentName] = useState(whiteboard.name)
   const [isEditingName, setIsEditingName] = useState(false)
+  const [showSharingModal, setShowSharingModal] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -115,6 +117,14 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
     }
   }
 
+  const handleShare = () => {
+    if (currentStatus !== 'PUBLISHED') {
+      alert('Only published whiteboards can be shared. Please publish this whiteboard first.')
+      return
+    }
+    setShowSharingModal(true)
+  }
+
   return (
     <>
       {/* Header */}
@@ -173,6 +183,16 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
               <option value="DRAFT">Draft</option>
               <option value="PUBLISHED">Published</option>
             </select>
+
+            {/* Share indicator */}
+            {whiteboard.isPubliclyShared && currentStatus === 'PUBLISHED' && (
+              <div className="flex items-center space-x-1 text-green-600 text-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+                <span>Shared</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -193,6 +213,20 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
           </div>
 
           <button
+            onClick={handleShare}
+            disabled={currentStatus !== 'PUBLISHED'}
+            className="bg-green-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={currentStatus !== 'PUBLISHED' ? 'Publish the whiteboard first to enable sharing' : 'Share this whiteboard'}
+          >
+            <div className="flex items-center space-x-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+              </svg>
+              <span>Share</span>
+            </div>
+          </button>
+
+          <button
             onClick={handleManualSave}
             disabled={isSaving || !hasUnsavedChanges}
             className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -206,6 +240,16 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
       <div className="flex-1">
         <Tldraw store={store} />
       </div>
+
+      {/* Sharing Modal */}
+      <SharingModal
+        whiteboardId={whiteboard.id}
+        whiteboardName={currentName}
+        currentShareId={whiteboard.shareId ?? null}
+        isPubliclyShared={whiteboard.isPubliclyShared || false}
+        isOpen={showSharingModal}
+        onClose={() => setShowSharingModal(false)}
+      />
     </>
   )
 }
