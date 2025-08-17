@@ -2,9 +2,11 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-// Define protected routes
-const isProtectedRoute = createRouteMatcher([
-  '/whiteboards(.*)',
+// Define public routes
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
@@ -14,8 +16,14 @@ export default clerkMiddleware(async (auth, req) => {
   if (userId && req.nextUrl.pathname === '/') {
     return NextResponse.redirect(new URL('/whiteboards', req.url))
   }
-  // Protect whiteboard routes
-  if (isProtectedRoute(req)) {
+  
+  // If user is signed in and trying to access auth pages, redirect to whiteboards
+  if (userId && (req.nextUrl.pathname.startsWith('/sign-in') || req.nextUrl.pathname.startsWith('/sign-up'))) {
+    return NextResponse.redirect(new URL('/whiteboards', req.url))
+  }
+  
+  // Protect routes that aren't public
+  if (!isPublicRoute(req)) {
     await auth.protect()
   }
 })

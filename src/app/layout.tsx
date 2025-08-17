@@ -57,6 +57,7 @@ export default function RootLayout({
                 <SignedOut>
                   <SignInButton
                     mode="redirect"
+                    forceRedirectUrl="/whiteboards"
                   >
                     <button className="text-gray-700 hover:text-gray-900 font-medium text-sm sm:text-base px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:scale-[1.02] active:scale-[0.98]">
                       Sign In
@@ -64,6 +65,7 @@ export default function RootLayout({
                   </SignInButton>
                   <SignUpButton
                     mode="redirect"
+                    forceRedirectUrl="/whiteboards"
                   >
                     <button className="bg-[#6c47ff] hover:bg-[#5a3de6] text-white rounded-lg font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-6 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]">
                       Sign Up
