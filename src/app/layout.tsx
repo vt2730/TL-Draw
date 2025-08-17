@@ -10,6 +10,7 @@ import {
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import Image from 'next/image'
+import { Suspense } from 'react'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -48,30 +49,38 @@ export default function RootLayout({
               />
             </div>
 
-            {/* Authentication Section */}
-            <div className="flex items-center gap-3">
-              <SignedOut>
-                <SignInButton>
-                  <button className="text-gray-700 hover:text-gray-900 font-medium text-sm sm:text-base px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:scale-[1.02] active:scale-[0.98]">
-                    Sign In
-                  </button>
-                </SignInButton>
-                <SignUpButton>
-                  <button className="bg-[#6c47ff] hover:bg-[#5a3de6] text-white rounded-lg font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-6 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]">
-                   Sign Up
-                  </button>
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
-                <UserButton
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-10 h-10 rounded-full border-2 border-gray-200 hover:border-[#6c47ff] transition-colors duration-200"
-                    }
-                  }}
-                />
-              </SignedIn>
-            </div>
+            {/* Authentication Section with Suspense */}
+            <Suspense fallback={
+              <div className="w-20 h-10 bg-gray-100 rounded-lg animate-pulse" />
+            }>
+              <div className="flex items-center gap-3">
+                <SignedOut>
+                  <SignInButton
+                    mode="redirect"
+                  >
+                    <button className="text-gray-700 hover:text-gray-900 font-medium text-sm sm:text-base px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:scale-[1.02] active:scale-[0.98]">
+                      Sign In
+                    </button>
+                  </SignInButton>
+                  <SignUpButton
+                    mode="redirect"
+                  >
+                    <button className="bg-[#6c47ff] hover:bg-[#5a3de6] text-white rounded-lg font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-6 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]">
+                      Sign Up
+                    </button>
+                  </SignUpButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-10 h-10 rounded-full border-2 border-gray-200 hover:border-[#6c47ff] transition-colors duration-200"
+                      }
+                    }}
+                  />
+                </SignedIn>
+              </div>
+            </Suspense>
           </header>
           {children}
         </body>
