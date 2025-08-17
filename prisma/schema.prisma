@@ -33,10 +33,35 @@ model Whiteboard {
   status      WhiteboardStatus @default(DRAFT)
   content     Json?    // TLDraw snapshot data
   userId      String   // Clerk user ID
+  shareId     String?  @unique
+  isPubliclyShared Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  comments         Comment[]
 
   @@map("whiteboards")
+}
+
+model Comment {
+  id           String     @id @default(cuid())
+  whiteboardId String
+  userId       String     // Clerk user ID
+  userName     String     // User's display name
+  userEmail    String?    // User's email (optional)
+  userAvatar   String?    // User's avatar URL (optional)
+  text         String     // Comment text
+  x            Float      // X position on canvas
+  y            Float      // Y position on canvas
+  resolved     Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  // Relationship
+  whiteboard   Whiteboard @relation(fields: [whiteboardId], references: [id], onDelete: Cascade)
+  
+  @@map("comments")
+  @@index([whiteboardId])
+  @@index([whiteboardId, resolved])
 }
 
 enum WhiteboardStatus {
