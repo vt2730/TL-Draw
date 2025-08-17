@@ -4,9 +4,12 @@
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Tldraw, createTLStore, defaultShapeUtils, defaultTools } from 'tldraw'
 import { updateWhiteboard } from '@/lib/actions/whiteboard'
+import { getWhiteboardComments } from '@/lib/actions/comment'
 import { Whiteboard, WhiteboardStatus } from '@/types/whiteboard'
 import { useRouter } from 'next/navigation'
 import { SharingModal } from './sharing-modal'
+import { CommentOverlay } from './comment-overlay'
+import type { CommentData } from './comment-pin'
 import 'tldraw/tldraw.css'
 
 interface WhiteboardEditorProps {
@@ -14,11 +17,11 @@ interface WhiteboardEditorProps {
 }
 
 export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
-  const [store] = useState(() => createTLStore({ 
-    shapeUtils: defaultShapeUtils, 
-    // tools: defaultTools 
+  // Store initialization - tools are handled by Tldraw component, not store
+  const [store] = useState(() => createTLStore({
+    shapeUtils: defaultShapeUtils,
   }))
-  
+
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date>(new Date(whiteboard.updatedAt))
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -26,15 +29,42 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
   const [currentName, setCurrentName] = useState(whiteboard.name)
   const [isEditingName, setIsEditingName] = useState(false)
   const [showSharingModal, setShowSharingModal] = useState(false)
+  const [comments, setComments] = useState<CommentData[]>([])
+  const [commentsLoaded, setCommentsLoaded] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  // Load initial content
+  // Load initial content - Fix: Add delay to ensure store is ready
   useEffect(() => {
     if (whiteboard.content) {
-      store.loadSnapshot(whiteboard.content)
+      // Small delay to ensure the store is fully initialized
+      setTimeout(() => {
+        try {
+          store.loadSnapshot(whiteboard.content)
+        } catch (error) {
+          console.error('Failed to load whiteboard content:', error)
+        }
+      }, 100)
     }
   }, [store, whiteboard.content])
+
+  // Load comments
+  useEffect(() => {
+    const loadComments = async () => {
+      try {
+        const result = await getWhiteboardComments(whiteboard.id, true)
+        if (result.success && result.data) {
+          setComments(result.data)
+        }
+      } catch (error) {
+        console.error('Failed to load comments:', error)
+      } finally {
+        setCommentsLoaded(true)
+      }
+    }
+
+    loadComments()
+  }, [whiteboard.id])
 
   // Auto-save functionality
   const saveWhiteboard = useCallback(async (content?: any, name?: string, status?: WhiteboardStatus) => {
@@ -43,10 +73,10 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
     setIsSaving(true)
     try {
       let snapshot = content || store.getSnapshot()
-      
+
       // Clean the snapshot to ensure it's serializable
       const cleanSnapshot = JSON.parse(JSON.stringify(snapshot))
-      
+
       const result = await updateWhiteboard(whiteboard.id, {
         content: cleanSnapshot,
         ...(name !== undefined && { name }),
@@ -68,13 +98,23 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
     }
   }, [store, whiteboard.id, isSaving])
 
-  // Listen for changes
+  // Listen for changes - Fix: Add cleanup and error handling
   useEffect(() => {
-    const unsubscribe = store.listen(() => {
-      setHasUnsavedChanges(true)
-    })
+    let unsubscribe: (() => void) | null = null
+    
+    try {
+      unsubscribe = store.listen(() => {
+        setHasUnsavedChanges(true)
+      })
+    } catch (error) {
+      console.error('Failed to set up store listener:', error)
+    }
 
-    return unsubscribe
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
   }, [store])
 
   // Auto-save every 10 seconds if there are unsaved changes
@@ -124,6 +164,9 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
     }
     setShowSharingModal(true)
   }
+
+  const openCommentsCount = comments.filter(c => !c.resolved).length
+  const resolvedCommentsCount = comments.filter(c => c.resolved).length
 
   return (
     <>
@@ -193,6 +236,22 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
                 <span>Shared</span>
               </div>
             )}
+
+            {/* Comments indicator */}
+            {commentsLoaded && (openCommentsCount > 0 || resolvedCommentsCount > 0) && (
+              <div className="flex items-center space-x-1 text-blue-600 text-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>{openCommentsCount} open</span>
+                {resolvedCommentsCount > 0 && (
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-green-600">{resolvedCommentsCount} resolved</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -236,9 +295,23 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
         </div>
       </div>
 
-      {/* TLDraw Editor */}
-      <div className="flex-1">
-        <Tldraw store={store} />
+      {/* TLDraw Editor with Comment Overlay */}
+      <div className="flex-1 relative">
+        {/* TLDraw Component */}
+        <Tldraw 
+          store={store}
+          autoFocus={false} // Don't auto focus when comment overlay might be active
+        />
+
+        {/* Comment Overlay */}
+        {commentsLoaded && (
+          <CommentOverlay
+            whiteboardId={whiteboard.id}
+            isOwner={true}
+            isReadOnly={false}
+            initialComments={comments}
+          />
+        )}
       </div>
 
       {/* Sharing Modal */}

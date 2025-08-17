@@ -1,7 +1,7 @@
 // src/components/whiteboard/sharing-modal.tsx
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { generateShareLink, disableSharing } from '@/lib/actions/sharing'
 
 interface SharingModalProps {
@@ -21,14 +21,16 @@ export function SharingModal({
     isOpen,
     onClose,
 }: SharingModalProps) {
-    const [shareUrl, setShareUrl] = useState(
-        currentShareId && isPubliclyShared
-            ? `${window.location.origin}/shared/${currentShareId}`
-            : null
-    )
+    const [shareUrl, setShareUrl] = useState<string | null>(null)
     const [isShared, setIsShared] = useState(isPubliclyShared)
     const [copySuccess, setCopySuccess] = useState(false)
     const [isPending, startTransition] = useTransition()
+
+    useEffect(() => {
+        if (currentShareId && isPubliclyShared) {
+            setShareUrl(`${window.location.origin}/shared/${currentShareId}`)
+        }
+    }, [currentShareId, isPubliclyShared])
 
     if (!isOpen) return null
 

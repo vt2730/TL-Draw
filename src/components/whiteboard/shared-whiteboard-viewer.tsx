@@ -3,6 +3,9 @@
 
 import { useEffect, useState } from 'react'
 import { Tldraw, createTLStore, defaultShapeUtils, defaultTools, useEditor } from 'tldraw'
+import { getSharedWhiteboardComments } from '@/lib/actions/comment'
+import { CommentOverlay } from './comment-overlay'
+import type { CommentData } from './comment-pin'
 import 'tldraw/tldraw.css'
 
 interface SharedWhiteboardData {
@@ -15,6 +18,7 @@ interface SharedWhiteboardData {
 
 interface SharedWhiteboardViewerProps {
   whiteboard: SharedWhiteboardData
+  shareId: string
 }
 
 // Custom component to make the editor read-only
@@ -35,10 +39,13 @@ function ReadOnlyWrapper() {
   return null
 }
 
-export function SharedWhiteboardViewer({ whiteboard }: SharedWhiteboardViewerProps) {
+export function SharedWhiteboardViewer({ whiteboard, shareId }: SharedWhiteboardViewerProps) {
   const [store] = useState(() => createTLStore({ 
     shapeUtils: defaultShapeUtils, 
   }))
+  
+  const [comments, setComments] = useState<CommentData[]>([])
+  const [commentsLoaded, setCommentsLoaded] = useState(false)
 
   // Load initial content
   useEffect(() => {
@@ -47,6 +54,24 @@ export function SharedWhiteboardViewer({ whiteboard }: SharedWhiteboardViewerPro
     }
   }, [store, whiteboard.content])
 
+  // Load comments for shared whiteboard
+  useEffect(() => {
+    const loadComments = async () => {
+      try {
+        const result = await getSharedWhiteboardComments(shareId)
+        if (result.success && result.data) {
+          setComments(result.data)
+        }
+      } catch (error) {
+        console.error('Failed to load shared comments:', error)
+      } finally {
+        setCommentsLoaded(true)
+      }
+    }
+    
+    loadComments()
+  }, [shareId])
+
   const formattedDate = new Date(whiteboard.updatedAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -54,6 +79,8 @@ export function SharedWhiteboardViewer({ whiteboard }: SharedWhiteboardViewerPro
     hour: '2-digit',
     minute: '2-digit',
   })
+
+  const openCommentsCount = comments.filter(c => !c.resolved).length
 
   return (
     <>
@@ -75,6 +102,16 @@ export function SharedWhiteboardViewer({ whiteboard }: SharedWhiteboardViewerPro
               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                 Read-Only
               </span>
+              
+              {/* Comments indicator for shared view */}
+              {commentsLoaded && openCommentsCount > 0 && (
+                <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>{openCommentsCount} comment{openCommentsCount !== 1 ? 's' : ''}</span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -87,13 +124,13 @@ export function SharedWhiteboardViewer({ whiteboard }: SharedWhiteboardViewerPro
         <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-sm text-blue-800">
             👀 You're viewing a shared whiteboard in read-only mode. 
-            You can view and zoom around, but cannot make changes.
+            You can view and zoom around{commentsLoaded && openCommentsCount > 0 ? ', and see comments' : ''}, but cannot make changes.
           </p>
         </div>
       </div>
 
       {/* TLDraw Viewer - Read-only mode */}
-      <div className="flex-1">
+      <div className="flex-1 relative">
         <Tldraw 
           store={store}
           hideUi={true}
@@ -108,6 +145,16 @@ export function SharedWhiteboardViewer({ whiteboard }: SharedWhiteboardViewerPro
         >
           <ReadOnlyWrapper />
         </Tldraw>
+        
+        {/* Comment Overlay for shared view */}
+        {commentsLoaded && (
+          <CommentOverlay
+            whiteboardId={whiteboard.id}
+            isOwner={false}
+            isReadOnly={true}
+            initialComments={comments}
+          />
+        )}
       </div>
     </>
   )
