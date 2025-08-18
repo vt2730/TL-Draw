@@ -34,10 +34,9 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  // Load initial content - Fix: Add delay to ensure store is ready
+  // Load initial content 
   useEffect(() => {
     if (whiteboard.content) {
-      // Small delay to ensure the store is fully initialized
       setTimeout(() => {
         try {
           store.loadSnapshot(whiteboard.content)
@@ -98,7 +97,6 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
     }
   }, [store, whiteboard.id, isSaving])
 
-  // Listen for changes - Fix: Add cleanup and error handling
   useEffect(() => {
     let unsubscribe: (() => void) | null = null
     
@@ -117,7 +115,6 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
     }
   }, [store])
 
-  // Auto-save every 10 seconds if there are unsaved changes
   useEffect(() => {
     if (!hasUnsavedChanges) return
 
@@ -300,7 +297,7 @@ export function WhiteboardEditor({ whiteboard }: WhiteboardEditorProps) {
         {/* TLDraw Component */}
         <Tldraw 
           store={store}
-          autoFocus={false} // Don't auto focus when comment overlay might be active
+          autoFocus={false}
         />
 
         {/* Comment Overlay */}

@@ -246,8 +246,6 @@ export function CommentOverlay({
         </div>
       )}
 
-      {/* REMOVED: The blocking overlay div that was causing the issue */}
-
       {/* Comment Pins - Fixed pointer events */}
       <div className="absolute inset-0 pointer-events-none z-20">
         <div className="relative w-full h-full">
@@ -288,7 +286,7 @@ export function CommentOverlay({
             left: Math.min(newComment.x + 20, window.innerWidth - 300),
             top: Math.min(newComment.y + 20, window.innerHeight - 150),
           }}
-          onClick={(e) => e.stopPropagation()} // Prevent clicks on form from bubbling
+          onClick={(e) => e.stopPropagation()} 
         >
           <div className="mb-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -302,7 +300,7 @@ export function CommentOverlay({
               placeholder="Type your comment here..."
               disabled={isSubmitting}
               autoFocus
-              onClick={(e) => e.stopPropagation()} // Prevent textarea clicks from bubbling
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
           
